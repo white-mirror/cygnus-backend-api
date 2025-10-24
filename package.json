@@ -4,9 +4,9 @@
   "description": "API de Cygnus construida con Express y TypeScript.",
   "main": "dist/src/index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
     "dev": "ts-node-dev --respawn --transpile-only --require tsconfig-paths/register src/index.ts",
-    "start": "node -r tsconfig-paths/register dist/src/index.js",
+    "start": "node dist/src/index.js",
     "test": "vitest run",
     "test:watch": "vitest watch --run"
   },
@@ -33,6 +33,7 @@
     "globals": "^16.4.0",
     "supertest": "^7.0.0",
     "ts-node-dev": "^2.0.0",
+    "tsc-alias": "^1.8.9",
     "typescript": "^5.6.3",
     "typescript-eslint": "^8.45.0",
     "vitest": "^3.2.4"
