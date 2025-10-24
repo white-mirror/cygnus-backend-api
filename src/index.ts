@@ -5,7 +5,7 @@ import express, {
   type Request,
   type Response,
 } from "express";
-import cors from "cors";
+import cors, { type CorsOptions } from "cors";
 import pinoHttp from "pino-http";
 import type { Logger } from "pino";
 import logger from "./logger";
@@ -45,6 +45,20 @@ const isOriginPermitted = (origin: string | undefined): boolean => {
   });
 };
 
+const corsOptions: CorsOptions = {
+  origin: (origin, callback) => {
+    if (isOriginPermitted(origin ?? undefined)) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error(`Origin not allowed: ${origin ?? "<unknown>"}`));
+  },
+  credentials: true,
+  optionsSuccessStatus: 204,
+};
+
+const corsMiddleware = cors(corsOptions);
+
 app.use(
   pinoHttp({
     logger,
@@ -72,17 +86,9 @@ app.use(
 );
 
 app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (isOriginPermitted(origin ?? undefined)) {
-        callback(null, true);
-        return;
-      }
-      callback(new Error(`Origin not allowed: ${origin ?? "<unknown>"}`));
-    },
-    credentials: true,
-  }),
+  corsMiddleware,
 );
+app.options("*", corsMiddleware);
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
