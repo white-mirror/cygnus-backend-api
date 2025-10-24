@@ -1,0 +1,39 @@
+@homeId=55156
+@deviceId=290901
+
+### Backend Health
+GET http://localhost:4000/api/ping
+
+### List Homes (requires valid BGH credentials in env)
+# @name getHomes
+GET http://localhost:4000/api/bgh/homes
+
+# @homeId = {{getHomes.response.body.homes.0.HomeID}}
+
+### List Devices For Home
+# Replace {homeId} with a real home identifier from previous response
+GET http://localhost:4000/api/bgh/homes/{{homeId}}/devices
+
+### Get Single Device Status
+GET http://localhost:4000/api/bgh/homes/{{homeId}}/devices/{{deviceId}}
+
+### Update Device Mode
+# Replace {deviceId} and adjust body as needed
+POST http://localhost:4000/api/bgh/devices/{{deviceId}}/mode
+Content-Type: application/json
+
+{
+  "mode": "cool",
+  "targetTemperature": 25,
+  "fan": "auto"
+}
+
+### Turn off Device
+# Replace {deviceId} and adjust body as needed
+POST http://localhost:4000/api/bgh/devices/{{deviceId}}/mode
+Content-Type: application/json
+
+{
+  "mode": "off",
+  "targetTemperature": 25
+}

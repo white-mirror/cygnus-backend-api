@@ -1,0 +1,40 @@
+{
+  "name": "@cygnus/backend-api",
+  "version": "1.0.0",
+  "description": "API de Cygnus construida con Express y TypeScript.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "ts-node-dev --respawn --transpile-only --require tsconfig-paths/register src/index.ts",
+    "start": "node -r tsconfig-paths/register dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest watch --run"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "axios": "^1.12.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "pino": "^9.13.0",
+    "pino-http": "^10.5.0",
+    "tsconfig-paths": "^4.2.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.8.1",
+    "@types/supertest": "^2.0.16",
+    "eslint": "^9.36.0",
+    "globals": "^16.4.0",
+    "supertest": "^7.0.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.45.0",
+    "vitest": "^3.2.4"
+  }
+}
