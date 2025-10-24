@@ -2,11 +2,11 @@
   "name": "@cygnus/backend-api",
   "version": "1.0.0",
   "description": "API de Cygnus construida con Express y TypeScript.",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "ts-node-dev --respawn --transpile-only --require tsconfig-paths/register src/index.ts",
-    "start": "node -r tsconfig-paths/register dist/index.js",
+    "start": "node -r tsconfig-paths/register dist/src/index.js",
     "test": "vitest run",
     "test:watch": "vitest watch --run"
   },
