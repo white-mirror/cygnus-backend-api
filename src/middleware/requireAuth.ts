@@ -9,6 +9,7 @@ type LoggedRequest = Request & { log?: Logger };
 export interface AuthenticatedRequest extends Request {
   auth: {
     email: string;
+    password: string;
     token: string;
   };
 }
@@ -36,6 +37,7 @@ export const requireAuth = (
 
   (req as AuthenticatedRequest).auth = {
     email: session.email,
+    password: session.password,
     token: session.token,
   };
 

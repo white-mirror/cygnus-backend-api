@@ -28,25 +28,25 @@ export class BGHServiceError extends Error {
   }
 }
 
-type Credentials = {
+export interface BghCredentials {
   email: string;
   password: string;
-};
+}
 
-const EMAIL_ENV_KEY = "BGH_EMAIL";
-const PASSWORD_ENV_KEY = "BGH_PASSWORD";
 const TIMEOUT_ENV_KEY = "BGH_TIMEOUT_MS";
 
-let clientPromise: Promise<BGHClient> | undefined;
-
-export async function listHomes(log?: Logger): Promise<HomeSummary[]> {
+export async function listHomes(
+  credentials: BghCredentials,
+  log?: Logger,
+): Promise<HomeSummary[]> {
   const svcLog = (log ?? logger).child({
     service: "bghService",
     operation: "listHomes",
+    userEmail: credentials.email,
   });
   svcLog.debug("Listing homes from BGH API");
   try {
-    const client = await getClient(svcLog);
+    const client = await createClient(credentials, svcLog);
     const homes = await client.listHomes();
     svcLog.info({ homeCount: homes.length }, "Homes retrieved from BGH");
     return homes;
@@ -56,6 +56,7 @@ export async function listHomes(log?: Logger): Promise<HomeSummary[]> {
 }
 
 export async function listDevices(
+  credentials: BghCredentials,
   homeId: number,
   log?: Logger,
 ): Promise<DeviceStatusMap> {
@@ -63,10 +64,11 @@ export async function listDevices(
     service: "bghService",
     operation: "listDevices",
     homeId,
+    userEmail: credentials.email,
   });
   svcLog.debug("Retrieving devices for home");
   try {
-    const client = await getClient(svcLog);
+    const client = await createClient(credentials, svcLog);
     const devices = await client.getDevices(homeId);
     svcLog.info(
       { deviceCount: Object.keys(devices).length },
@@ -83,6 +85,7 @@ export async function listDevices(
 }
 
 export async function getDeviceStatus(
+  credentials: BghCredentials,
   homeId: number,
   deviceId: number,
   log?: Logger,
@@ -92,10 +95,11 @@ export async function getDeviceStatus(
     operation: "getDeviceStatus",
     homeId,
     deviceId,
+    userEmail: credentials.email,
   });
   svcLog.debug("Retrieving device status");
   try {
-    const client = await getClient(svcLog);
+    const client = await createClient(credentials, svcLog);
     const device = await client.getDeviceStatus(homeId, deviceId);
     svcLog.info("Device status retrieved from BGH");
     return device;
@@ -109,6 +113,7 @@ export async function getDeviceStatus(
 }
 
 export async function setDeviceMode(
+  credentials: BghCredentials,
   deviceId: number,
   options: Parameters<BGHClient["setMode"]>[1],
   log?: Logger,
@@ -118,13 +123,14 @@ export async function setDeviceMode(
     operation: "setDeviceMode",
     deviceId,
     mode: options.mode,
+    userEmail: credentials.email,
   });
   svcLog.info(
     { targetTemperature: options.targetTemperature, fan: options.fan },
     "Updating device mode in BGH API",
   );
   try {
-    const client = await getClient(svcLog);
+    const client = await createClient(credentials, svcLog);
     const response = await client.setMode(deviceId, options);
     svcLog.info("Device mode updated in BGH");
     return response;
@@ -133,24 +139,15 @@ export async function setDeviceMode(
   }
 }
 
-async function getClient(log?: Logger): Promise<BGHClient> {
+async function createClient(
+  credentials: BghCredentials,
+  log?: Logger,
+): Promise<BGHClient> {
   const scopedLog = (log ?? logger).child({
     service: "bghService",
     component: "client",
+    userEmail: credentials.email,
   });
-  if (!clientPromise) {
-    scopedLog.debug("Creating new BGH client instance");
-    clientPromise = createClient(scopedLog);
-  }
-  return clientPromise;
-}
-
-async function createClient(log?: Logger): Promise<BGHClient> {
-  const scopedLog = (log ?? logger).child({
-    service: "bghService",
-    component: "client",
-  });
-  const credentials = resolveCredentials(scopedLog);
   const options: BGHClientOptions = {};
   const timeout = parseTimeout(scopedLog);
   if (timeout !== undefined) {
@@ -159,21 +156,6 @@ async function createClient(log?: Logger): Promise<BGHClient> {
   }
   scopedLog.info("Initialising BGH client");
   return new BGHClient(credentials.email, credentials.password, options);
-}
-
-function resolveCredentials(log: Logger): Credentials {
-  const email = process.env[EMAIL_ENV_KEY];
-  const password = process.env[PASSWORD_ENV_KEY];
-
-  if (!email || !password) {
-    log.error("Missing BGH credentials");
-    throw new BGHServiceError(
-      `Missing BGH credentials. Ensure environment variables ${EMAIL_ENV_KEY} and ${PASSWORD_ENV_KEY} are set.`,
-      "CONFIGURATION_ERROR",
-    );
-  }
-
-  return { email, password };
 }
 
 function parseTimeout(log: Logger): number | undefined {

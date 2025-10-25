@@ -4,6 +4,7 @@ import type { Request } from "express";
 export interface Session {
   token: string;
   email: string;
+  password: string;
   createdAt: number;
   expiresAt: number;
 }
@@ -15,12 +16,13 @@ export const SESSION_TTL_MS = 1000 * 60 * 60 * 12; // 12 hours
 
 const generateToken = (): string => randomBytes(32).toString("base64url");
 
-export const createSession = (email: string): Session => {
+export const createSession = (email: string, password: string): Session => {
   const now = Date.now();
   const token = generateToken();
   const session: Session = {
     token,
     email,
+    password,
     createdAt: now,
     expiresAt: now + SESSION_TTL_MS,
   };

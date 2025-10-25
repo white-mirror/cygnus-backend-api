@@ -18,9 +18,6 @@ const getRequestLogger = (req: Request): Logger => {
   return request.log ?? logger;
 };
 
-const EMAIL_ENV_KEY = "BGH_EMAIL";
-const PASSWORD_ENV_KEY = "BGH_PASSWORD";
-
 const COOKIE_OPTIONS: CookieOptions = {
   httpOnly: true,
   sameSite: "lax",
@@ -51,36 +48,12 @@ export const login = (req: Request, res: Response): void => {
     return;
   }
 
-  const configuredEmail = normaliseString(process.env[EMAIL_ENV_KEY]);
-  const configuredPassword = normaliseString(process.env[PASSWORD_ENV_KEY]);
-
-  if (!configuredEmail || !configuredPassword) {
-    log.error("Missing backend credentials configuration");
-    res.status(500).json({
-      code: "CONFIGURATION_ERROR",
-      message: "El servicio no está configurado para autenticación.",
-    });
-    return;
-  }
-
-  if (
-    configuredEmail.toLowerCase() !== email.toLowerCase() ||
-    configuredPassword !== password
-  ) {
-    log.warn({ email }, "Invalid credentials provided");
-    res.status(401).json({
-      code: "INVALID_CREDENTIALS",
-      message: "Email o contraseña incorrectos.",
-    });
-    return;
-  }
-
-  const session = createSession(configuredEmail);
+  const session = createSession(email, password);
   res.cookie(SESSION_COOKIE_NAME, session.token, COOKIE_OPTIONS);
   log.info({ email }, "User authenticated");
   res.json({
     user: {
-      email: configuredEmail,
+      email,
     },
   });
 };

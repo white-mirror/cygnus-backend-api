@@ -6,6 +6,7 @@ import {
   getDeviceStatus,
   setDeviceMode,
   type BGHServiceError,
+  type BghCredentials,
 } from "./bghService";
 import { broadcastEvent } from "./eventStream";
 
@@ -20,6 +21,7 @@ export interface CommandPayload {
 }
 
 export interface CommandJobInput {
+  credentials: BghCredentials;
   homeId: number;
   deviceId: number;
   payload: CommandPayload;
@@ -74,7 +76,12 @@ const pollForStatus = async (
   let lastDevice: DeviceStatus | null = null;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     try {
-      const device = await getDeviceStatus(job.homeId, job.deviceId, log);
+      const device = await getDeviceStatus(
+        job.credentials,
+        job.homeId,
+        job.deviceId,
+        log,
+      );
       lastDevice = device;
       if (matchesExpected(device, job.payload)) {
         return { device, attempts: attempt };
@@ -124,7 +131,7 @@ const runJob = async (job: CommandJob): Promise<void> => {
   jobLog.info("Processing queued device command");
 
   try {
-    await setDeviceMode(job.deviceId, job.payload, jobLog);
+    await setDeviceMode(job.credentials, job.deviceId, job.payload, jobLog);
     const { device, attempts } = await pollForStatus(job, jobLog);
     jobLog.info({ attempts }, "Device command completed");
     publishResult({ status: "completed", job, device, attempts });
@@ -172,6 +179,7 @@ const processQueue = async (): Promise<void> => {
 };
 
 export const enqueueCommand = ({
+  credentials,
   homeId,
   deviceId,
   payload,
@@ -179,6 +187,7 @@ export const enqueueCommand = ({
 }: CommandJobInput): { jobId: string; position: number } => {
   const job: CommandJob = {
     id: randomUUID(),
+    credentials,
     homeId,
     deviceId,
     payload,

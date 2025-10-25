@@ -6,6 +6,7 @@ import {
   getDeviceStatus as getDeviceStatusService,
   listDevices as listDevicesService,
   listHomes as listHomesService,
+  type BghCredentials,
   type BghServiceErrorCode,
 } from "../services/bghService";
 import { FAN_MODES, HVAC_MODES } from "integrations/bgh/client";
@@ -35,6 +36,11 @@ const getRequestLogger = (req: Request): Logger => {
   }
 
   return baseLogger;
+};
+
+const getCredentials = (req: Request): BghCredentials => {
+  const { auth } = req as AuthenticatedRequest;
+  return { email: auth.email, password: auth.password };
 };
 
 const sendServiceError = (
@@ -111,7 +117,7 @@ export const listHomes: Controller = async (req, res, next) => {
   const log = getRequestLogger(req).child({ route: "listHomes" });
   log.info("Listing homes");
   try {
-    const homes = await listHomesService(log);
+    const homes = await listHomesService(getCredentials(req), log);
     log.info({ homeCount: homes.length }, "Homes retrieved");
     res.json({ homes });
   } catch (error) {
@@ -128,7 +134,11 @@ export const listDevices: Controller = async (req, res, next) => {
 
   log.info({ homeId }, "Listing devices for home");
   try {
-    const devices = await listDevicesService(homeId, log);
+    const devices = await listDevicesService(
+      getCredentials(req),
+      homeId,
+      log,
+    );
     log.info(
       { homeId, deviceCount: Object.keys(devices).length },
       "Devices retrieved",
@@ -153,7 +163,12 @@ export const getDeviceStatus: Controller = async (req, res, next) => {
 
   log.info({ homeId, deviceId }, "Fetching device status");
   try {
-    const device = await getDeviceStatusService(homeId, deviceId, log);
+    const device = await getDeviceStatusService(
+      getCredentials(req),
+      homeId,
+      deviceId,
+      log,
+    );
     log.info({ homeId, deviceId }, "Device status retrieved");
     res.json({ device });
   } catch (error) {
@@ -240,7 +255,9 @@ export const setDeviceMode: Controller = async (req, res, _next) => {
     "Queueing device mode update",
   );
 
+  const credentials = getCredentials(req);
   const { jobId, position } = enqueueCommand({
+    credentials,
     homeId,
     deviceId,
     payload,
