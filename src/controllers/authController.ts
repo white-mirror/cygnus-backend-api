@@ -18,10 +18,12 @@ const getRequestLogger = (req: Request): Logger => {
   return request.log ?? logger;
 };
 
+const isProduction = process.env.NODE_ENV === "production";
+
 const COOKIE_OPTIONS: CookieOptions = {
   httpOnly: true,
-  sameSite: "lax",
-  secure: process.env.NODE_ENV === "production",
+  sameSite: isProduction ? ("none" as const) : "lax",
+  secure: isProduction,
   path: "/",
   maxAge: SESSION_TTL_MS,
 };
