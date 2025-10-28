@@ -4,6 +4,7 @@
   "description": "API de Cygnus construida con Express y TypeScript.",
   "main": "dist/src/index.js",
   "scripts": {
+    "lint": "eslint . --max-warnings=0",
     "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
     "dev": "ts-node-dev --respawn --transpile-only --require tsconfig-paths/register src/index.ts",
     "start": "node dist/src/index.js",
