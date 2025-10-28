@@ -10,10 +10,7 @@ import {
   deleteSession,
   getSessionFromRequest,
 } from "../services/authService";
-import {
-  BGHServiceError,
-  validateCredentials,
-} from "../services/bghService";
+import { BGHServiceError, validateCredentials } from "../services/bghService";
 
 type LoggedRequest = Request & { log?: Logger };
 
