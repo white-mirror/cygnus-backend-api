@@ -10,6 +10,10 @@ import {
   deleteSession,
   getSessionFromRequest,
 } from "../services/authService";
+import {
+  BGHServiceError,
+  validateCredentials,
+} from "../services/bghService";
 
 type LoggedRequest = Request & { log?: Logger };
 
@@ -36,7 +40,7 @@ const normaliseString = (value: unknown): string | null => {
   return trimmed.length > 0 ? trimmed : null;
 };
 
-export const login = (req: Request, res: Response): void => {
+export const login = async (req: Request, res: Response): Promise<void> => {
   const log = getRequestLogger(req).child({ route: "authLogin" });
   const email = normaliseString(req.body?.email);
   const password = normaliseString(req.body?.password);
@@ -49,6 +53,42 @@ export const login = (req: Request, res: Response): void => {
     res.status(400).json({
       code: "INVALID_BODY",
       message: "Debés enviar email y contraseña válidos.",
+    });
+    return;
+  }
+
+  try {
+    await validateCredentials(
+      { email, password },
+      log.child({ phase: "validateCredentials" }),
+    );
+  } catch (error) {
+    if (error instanceof BGHServiceError) {
+      if (error.code === "AUTHENTICATION_ERROR") {
+        log.warn({ email }, "Invalid credentials provided");
+        res.status(401).json({
+          code: "INVALID_CREDENTIALS",
+          message: "Email o contraseña incorrectos.",
+        });
+        return;
+      }
+
+      log.error(
+        { email, err: error },
+        "Failed to validate credentials against BGH",
+      );
+      res.status(502).json({
+        code: "BGH_VALIDATION_FAILED",
+        message:
+          "No pudimos validar tus credenciales con el servicio de BGH. Intentalo nuevamente en unos minutos.",
+      });
+      return;
+    }
+
+    log.error({ email, err: error }, "Unexpected validation failure");
+    res.status(500).json({
+      code: "AUTH_VALIDATION_ERROR",
+      message: "No pudimos validar tus credenciales en este momento.",
     });
     return;
   }

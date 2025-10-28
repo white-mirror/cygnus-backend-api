@@ -55,6 +55,25 @@ export async function listHomes(
   }
 }
 
+export async function validateCredentials(
+  credentials: BghCredentials,
+  log?: Logger,
+): Promise<void> {
+  const svcLog = (log ?? logger).child({
+    service: "bghService",
+    operation: "validateCredentials",
+    userEmail: credentials.email,
+  });
+  svcLog.info("Validating credentials with BGH API");
+  try {
+    const client = await createClient(credentials, svcLog);
+    await client.listHomes();
+    svcLog.info("Credentials validated against BGH API");
+  } catch (error) {
+    throw normaliseError("validating credentials", error, svcLog);
+  }
+}
+
 export async function listDevices(
   credentials: BghCredentials,
   homeId: number,
