@@ -10,10 +10,7 @@ import {
   type BghServiceErrorCode,
 } from "../services/bghService";
 import { FAN_MODES, HVAC_MODES } from "integrations/bgh/client";
-import {
-  enqueueCommand,
-  type CommandPayload,
-} from "../services/commandQueue";
+import { enqueueCommand, type CommandPayload } from "../services/commandQueue";
 import { registerClient } from "../services/eventStream";
 import type { AuthenticatedRequest } from "../middleware/requireAuth";
 
@@ -134,11 +131,7 @@ export const listDevices: Controller = async (req, res, next) => {
 
   log.info({ homeId }, "Listing devices for home");
   try {
-    const devices = await listDevicesService(
-      getCredentials(req),
-      homeId,
-      log,
-    );
+    const devices = await listDevicesService(getCredentials(req), homeId, log);
     log.info(
       { homeId, deviceCount: Object.keys(devices).length },
       "Devices retrieved",

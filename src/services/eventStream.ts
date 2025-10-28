@@ -58,7 +58,10 @@ export const registerClient = (
   }, HEARTBEAT_INTERVAL_MS);
 
   clients.set(clientId, client);
-  log.info({ clientId, connectedClients: clients.size }, "SSE client connected");
+  log.info(
+    { clientId, connectedClients: clients.size },
+    "SSE client connected",
+  );
 
   req.on("close", () => {
     removeClient(clientId);
@@ -72,7 +75,10 @@ export const broadcastEvent = (event: string, payload: unknown): void => {
       client.res.write(`event: ${event}\n`);
       client.res.write(`data: ${data}\n\n`);
     } catch (error) {
-      client.log.warn({ err: error, event }, "Failed to push SSE event, dropping client");
+      client.log.warn(
+        { err: error, event },
+        "Failed to push SSE event, dropping client",
+      );
       removeClient(client.id);
     }
   }

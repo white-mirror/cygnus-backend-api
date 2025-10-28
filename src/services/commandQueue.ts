@@ -34,7 +34,12 @@ interface CommandJob extends CommandJobInput {
 }
 
 type CommandResult =
-  | { status: "completed"; job: CommandJob; device: DeviceStatus; attempts: number }
+  | {
+      status: "completed";
+      job: CommandJob;
+      device: DeviceStatus;
+      attempts: number;
+    }
   | { status: "failed"; job: CommandJob; error: Error; attempts: number };
 
 const POLL_DELAY_MS = 750;
@@ -142,7 +147,10 @@ const runJob = async (job: CommandJob): Promise<void> => {
     publishResult({
       status: "failed",
       job,
-      error: failureReason instanceof Error ? failureReason : new Error(String(failureReason)),
+      error:
+        failureReason instanceof Error
+          ? failureReason
+          : new Error(String(failureReason)),
       attempts: 0,
     });
   }

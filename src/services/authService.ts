@@ -50,23 +50,27 @@ export const deleteSession = (token: string): void => {
   sessions.delete(token);
 };
 
-const parseCookies = (cookieHeader: string | undefined): Record<string, string> => {
+const parseCookies = (
+  cookieHeader: string | undefined,
+): Record<string, string> => {
   if (!cookieHeader || cookieHeader.length === 0) {
     return {};
   }
 
-  return cookieHeader.split(";").reduce<Record<string, string>>((acc, rawPair) => {
-    const [rawName, ...rest] = rawPair.split("=");
-    if (!rawName) {
+  return cookieHeader
+    .split(";")
+    .reduce<Record<string, string>>((acc, rawPair) => {
+      const [rawName, ...rest] = rawPair.split("=");
+      if (!rawName) {
+        return acc;
+      }
+      const name = rawName.trim();
+      if (!name) {
+        return acc;
+      }
+      acc[name] = rest.join("=").trim();
       return acc;
-    }
-    const name = rawName.trim();
-    if (!name) {
-      return acc;
-    }
-    acc[name] = rest.join("=").trim();
-    return acc;
-  }, {});
+    }, {});
 };
 
 export const getSessionFromRequest = (req: Request): Session | null => {

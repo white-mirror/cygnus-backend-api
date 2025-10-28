@@ -42,7 +42,10 @@ export const login = (req: Request, res: Response): void => {
   const password = normaliseString(req.body?.password);
 
   if (!email || !password) {
-    log.warn({ hasEmail: Boolean(email), hasPassword: Boolean(password) }, "Missing credentials in request");
+    log.warn(
+      { hasEmail: Boolean(email), hasPassword: Boolean(password) },
+      "Missing credentials in request",
+    );
     res.status(400).json({
       code: "INVALID_BODY",
       message: "Debés enviar email y contraseña válidos.",

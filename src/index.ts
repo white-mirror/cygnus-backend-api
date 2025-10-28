@@ -85,9 +85,7 @@ app.use(
   }),
 );
 
-app.use(
-  corsMiddleware,
-);
+app.use(corsMiddleware);
 app.options(/.*/, corsMiddleware);
 app.use(express.json());
 
