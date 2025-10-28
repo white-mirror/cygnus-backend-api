@@ -74,6 +74,31 @@ const parseCookies = (
 };
 
 export const getSessionFromRequest = (req: Request): Session | null => {
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    const [scheme, tokenCandidate] = authHeader.split(" ");
+    if (scheme?.toLowerCase() === "bearer" && tokenCandidate) {
+      const session = getSession(tokenCandidate);
+      if (session) {
+        return session;
+      }
+    }
+  }
+
+  const queryTokenRaw = (req.query?.token ?? null) as
+    | string
+    | string[]
+    | null;
+  const queryToken = Array.isArray(queryTokenRaw)
+    ? queryTokenRaw[0]
+    : queryTokenRaw;
+  if (typeof queryToken === "string" && queryToken.length > 0) {
+    const session = getSession(queryToken);
+    if (session) {
+      return session;
+    }
+  }
+
   const header = req.headers.cookie;
   if (!header) {
     return null;
