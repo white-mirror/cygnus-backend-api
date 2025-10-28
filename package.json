@@ -12,7 +12,7 @@
     "test:watch": "vitest watch --run"
   },
   "keywords": [],
-  "author": "",
+  "author": "Nicolás Panaino",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
