@@ -1,6 +1,6 @@
 {
   "name": "@cygnus/backend-api",
-  "version": "1.1.0",
+  "version": "1.2.1",
   "description": "API de Cygnus construida con Express y TypeScript.",
   "main": "dist/src/index.js",
   "scripts": {
@@ -17,7 +17,7 @@
   },
   "keywords": [],
   "author": "Nicolás Panaino",
-  "buildNumber": "251111661",
+  "buildNumber": "251111670",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {

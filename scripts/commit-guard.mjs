@@ -1,16 +1,35 @@
 #!/usr/bin/env node
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  rmSync,
+  statSync,
+} from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import semver from "semver";
 
 const __filename = fileURLToPath(import.meta.url);
 const projectRoot = path.resolve(path.dirname(__filename), "..");
-const packageJsonPath = path.join(projectRoot, "package.json");
-const packageLockPath = path.join(projectRoot, "package-lock.json");
+const gitDir = resolveGitDir();
+const metadataPath = path.join(gitDir, "cygnus-commit.json");
 
 const [, , messageFile] = process.argv;
+
+function resolveGitDir() {
+  const gitPath = path.join(projectRoot, ".git");
+  const stats = statSync(gitPath);
+  if (stats.isFile()) {
+    const content = readFileSync(gitPath, "utf8").trim();
+    const match = content.match(/gitdir:\s*(.*)/i);
+    if (!match) {
+      throw new Error(`Unable to resolve gitdir from ${gitPath}`);
+    }
+    return path.resolve(projectRoot, match[1].trim());
+  }
+  return gitPath;
+}
 
 function readCommitMessage(file) {
   return readFileSync(file, "utf8").trim();
@@ -81,68 +100,41 @@ function runScript(scriptName) {
   }
 }
 
-function bumpVersion(releaseType) {
-  const pkg = JSON.parse(readFileSync(packageJsonPath, "utf8"));
-  const nextVersion = semver.inc(pkg.version, releaseType);
+function persistMetadata(payload) {
+  writeFileSync(metadataPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+}
 
-  if (!nextVersion) {
-    console.error(
-      `[versioning] Unable to bump version ${pkg.version} (${releaseType})`,
-    );
-    process.exit(1);
+function clearMetadata() {
+  if (existsSync(metadataPath)) {
+    rmSync(metadataPath);
   }
+}
 
-  pkg.version = nextVersion;
-  const serialized = `${JSON.stringify(pkg, null, 2)}\n`;
-  writeFileSync(packageJsonPath, serialized, "utf8");
-
-  const filesToStage = ["package.json"];
-
-  if (existsSync(packageLockPath)) {
-    try {
-      const lock = JSON.parse(readFileSync(packageLockPath, "utf8"));
-      lock.version = nextVersion;
-      if (lock.packages && lock.packages[""]) {
-        lock.packages[""].version = nextVersion;
-      }
-      writeFileSync(
-        packageLockPath,
-        `${JSON.stringify(lock, null, 2)}\n`,
-        "utf8",
-      );
-      filesToStage.push("package-lock.json");
-    } catch (error) {
-      console.error("[versioning] Unable to update package-lock.json", error);
-      process.exit(1);
-    }
-  }
-
-  const addResult = spawnSync("git", ["add", ...filesToStage], {
-    stdio: "inherit",
-    cwd: projectRoot,
-  });
-  if (addResult.status !== 0) {
-    console.error("[versioning] Failed to stage package.json");
-    process.exit(addResult.status || 1);
-  }
+if (process.env.CYGNUS_SKIP_VERSIONING === "1") {
+  process.exit(0);
 }
 
 const message = readCommitMessage(messageFile);
 
 if (!message) {
+  clearMetadata();
   process.exit(0);
 }
 
 if (message.toLowerCase().startsWith("wip:")) {
+  clearMetadata();
   process.exit(0);
 }
 
 if (isMergeCommit() || message.startsWith("Merge ")) {
+  clearMetadata();
   process.exit(0);
 }
 
 const releaseType = determineReleaseType(message);
 
-["format", "lint", "typecheck", "build"].forEach((script) => runScript(script));
+["format", "lint", "typecheck", "build:app"].forEach((script) =>
+  runScript(script),
+);
 
-bumpVersion(releaseType);
+persistMetadata({ releaseType });
