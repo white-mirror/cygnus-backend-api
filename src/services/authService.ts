@@ -85,10 +85,7 @@ export const getSessionFromRequest = (req: Request): Session | null => {
     }
   }
 
-  const queryTokenRaw = (req.query?.token ?? null) as
-    | string
-    | string[]
-    | null;
+  const queryTokenRaw = (req.query?.token ?? null) as string | string[] | null;
   const queryToken = Array.isArray(queryTokenRaw)
     ? queryTokenRaw[0]
     : queryTokenRaw;
