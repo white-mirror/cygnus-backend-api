@@ -19,10 +19,12 @@ const allowedOrigins = rawAllowedOrigins
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+const vercelOriginPattern = /^https?:\/\/[a-z0-9-]+\.vercel\.app$/i;
 const defaultAllowedOrigins: Array<string | RegExp> = [
   /^https?:\/\/localhost(:\d+)?$/i,
   /^http:\/\/127\.0\.0\.1(:\d+)?$/i,
   "capacitor://localhost",
+  vercelOriginPattern,
 ];
 
 const isOriginPermitted = (origin: string | undefined): boolean => {
@@ -60,6 +62,16 @@ const corsMiddleware = cors(corsOptions);
 
 export const createApp = (): express.Express => {
   const app = express();
+
+  logger.info(
+    {
+      allowedOrigins,
+      defaultAllowedOrigins: defaultAllowedOrigins.map((item) =>
+        typeof item === "string" ? item : item.toString(),
+      ),
+    },
+    "Configured CORS",
+  );
 
   app.use(
     pinoHttp({
