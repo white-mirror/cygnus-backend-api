@@ -61,6 +61,7 @@ const corsOptions: CorsOptions = {
   },
   credentials: true,
   optionsSuccessStatus: 204,
+  methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
 };
 
 const corsMiddleware = cors(corsOptions);
@@ -84,6 +85,14 @@ export const createApp = (): express.Express => {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Credentials", "true");
       res.setHeader("Vary", "Origin");
+      res.setHeader(
+        "Access-Control-Allow-Headers",
+        req.headers["access-control-request-headers"] ?? "Content-Type",
+      );
+      const methods = Array.isArray(corsOptions.methods)
+        ? corsOptions.methods.join(",")
+        : (corsOptions.methods ?? "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS");
+      res.setHeader("Access-Control-Allow-Methods", methods);
     }
     next();
   });
@@ -115,6 +124,7 @@ export const createApp = (): express.Express => {
   );
 
   app.use(corsMiddleware);
+  app.options(/.*/, corsMiddleware);
   app.use(express.json());
 
   app.use("/api/auth", authRoutes);
