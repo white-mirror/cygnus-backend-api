@@ -47,22 +47,25 @@ const isOriginPermitted = (origin: string | undefined): boolean => {
   });
 };
 
-const corsOptions: CorsOptions = {
-  origin: (origin, callback) => {
-    if (ALLOW_ALL_ORIGINS) {
-      callback(null, true);
-      return;
+const corsOptions: CorsOptions = ALLOW_ALL_ORIGINS
+  ? {
+      origin: true,
+      credentials: true,
+      optionsSuccessStatus: 204,
+      methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
     }
-    if (isOriginPermitted(origin ?? undefined)) {
-      callback(null, true);
-      return;
-    }
-    callback(new Error(`Origin not allowed: ${origin ?? "<unknown>"}`));
-  },
-  credentials: true,
-  optionsSuccessStatus: 204,
-  methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
-};
+  : {
+      origin: (origin, callback) => {
+        if (isOriginPermitted(origin ?? undefined)) {
+          callback(null, true);
+          return;
+        }
+        callback(new Error(`Origin not allowed: ${origin ?? "<unknown>"}`));
+      },
+      credentials: true,
+      optionsSuccessStatus: 204,
+      methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+    };
 
 const corsMiddleware = cors(corsOptions);
 
@@ -79,24 +82,6 @@ export const createApp = (): express.Express => {
     },
     "Configured CORS",
   );
-
-  app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (origin && (ALLOW_ALL_ORIGINS || isOriginPermitted(origin))) {
-      res.setHeader("Access-Control-Allow-Origin", origin);
-      res.setHeader("Access-Control-Allow-Credentials", "true");
-      res.setHeader("Vary", "Origin");
-      res.setHeader(
-        "Access-Control-Allow-Headers",
-        req.headers["access-control-request-headers"] ?? "Content-Type",
-      );
-      const methods = Array.isArray(corsOptions.methods)
-        ? corsOptions.methods.join(",")
-        : (corsOptions.methods ?? "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS");
-      res.setHeader("Access-Control-Allow-Methods", methods);
-    }
-    next();
-  });
 
   app.use(
     pinoHttp({
