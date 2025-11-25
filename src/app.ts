@@ -15,6 +15,7 @@ import authRoutes from "../app/routes/authRoutes";
 type LoggedRequest = Request & { log: Logger };
 
 const rawAllowedOrigins = process.env.CORS_ALLOWED_ORIGINS ?? "";
+const ALLOW_ALL_ORIGINS = process.env.CORS_ALLOW_ALL === "1";
 const allowedOrigins = rawAllowedOrigins
   .split(",")
   .map((origin) => origin.trim())
@@ -48,6 +49,10 @@ const isOriginPermitted = (origin: string | undefined): boolean => {
 
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
+    if (ALLOW_ALL_ORIGINS) {
+      callback(null, true);
+      return;
+    }
     if (isOriginPermitted(origin ?? undefined)) {
       callback(null, true);
       return;
