@@ -12,6 +12,10 @@
 - `CORS_ALLOW_ALL`: si está en `1` acepta cualquier origen (útil para entornos de testing/previews).
 - `BGH_TIMEOUT_MS`: timeout opcional (ms) para el cliente de BGH.
 
+## Healthcheck
+
+- `GET /api/health`: devuelve versión, buildNumber y variables CORS relevantes para debugging de despliegue.
+
 ## Despliegue serverless
 
 - El handler HTTP vive en `api/[[...route]].ts` y reusa la app Express exportada en `src/app.ts`, compatible con Vercel (`/api/*`).

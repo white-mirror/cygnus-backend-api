@@ -75,6 +75,7 @@ export const createApp = (): express.Express => {
       defaultAllowedOrigins: defaultAllowedOrigins.map((item) =>
         typeof item === "string" ? item : item.toString(),
       ),
+      allowAllOrigins: ALLOW_ALL_ORIGINS,
     },
     "Configured CORS",
   );
@@ -134,6 +135,22 @@ export const createApp = (): express.Express => {
     const request = req as LoggedRequest;
     request.log.debug("Received ping request");
     res.json({ message: "pong desde backend :)" });
+  });
+
+  app.get("/api/health", (req: Request, res: Response) => {
+    const env = {
+      nodeEnv: process.env.NODE_ENV ?? "undefined",
+      vercel: process.env.VERCEL ?? "undefined",
+      corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS ?? "undefined",
+      corsAllowAll: process.env.CORS_ALLOW_ALL ?? "undefined",
+      version: process.env.npm_package_version ?? "unknown",
+      buildNumber: process.env.npm_package_buildNumber ?? "unknown",
+    };
+    res.json({
+      status: "ok",
+      env,
+      timestamp: Date.now(),
+    });
   });
 
   app.use(
