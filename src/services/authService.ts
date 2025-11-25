@@ -1,4 +1,9 @@
-import { randomBytes } from "crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  randomBytes,
+} from "crypto";
 import type { Request } from "express";
 
 export interface Session {
@@ -9,46 +14,125 @@ export interface Session {
   expiresAt: number;
 }
 
-const sessions = new Map<string, Session>();
-
 export const SESSION_COOKIE_NAME = "cygnus_session";
 export const SESSION_TTL_MS = 1000 * 60 * 60 * 12; // 12 hours
 
-const generateToken = (): string => randomBytes(32).toString("base64url");
+const SESSION_SECRET_ENV = "SESSION_SECRET";
+const ALGORITHM = "aes-256-gcm";
+const KEY_LENGTH = 32;
+const IV_LENGTH = 12;
+
+type SessionClaims = {
+  email: string;
+  password: string;
+  iat: number;
+  exp: number;
+};
+
+const toBase64Url = (value: Buffer): string =>
+  value
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+
+const fromBase64Url = (value: string): Buffer => {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  return Buffer.from(normalized, "base64");
+};
+
+const deriveKey = (): Buffer => {
+  const secret = process.env[SESSION_SECRET_ENV];
+  if (!secret || secret.length === 0) {
+    throw new Error(
+      `Missing ${SESSION_SECRET_ENV}. Define it to issue session tokens.`,
+    );
+  }
+  const hash = createHash("sha256").update(secret).digest();
+  return hash.subarray(0, KEY_LENGTH);
+};
+
+const encodeClaims = (claims: SessionClaims): string => {
+  const iv = randomBytes(IV_LENGTH);
+  const cipher = createCipheriv(ALGORITHM, deriveKey(), iv);
+  const payload = Buffer.from(JSON.stringify(claims), "utf8");
+  const ciphertext = Buffer.concat([cipher.update(payload), cipher.final()]);
+  const authTag = cipher.getAuthTag();
+
+  return `${toBase64Url(iv)}.${toBase64Url(ciphertext)}.${toBase64Url(authTag)}`;
+};
+
+const decodeClaims = (token: string): SessionClaims | null => {
+  const [ivPart, cipherPart, tagPart] = token.split(".");
+  if (!ivPart || !cipherPart || !tagPart) {
+    return null;
+  }
+
+  try {
+    const iv = fromBase64Url(ivPart);
+    const ciphertext = fromBase64Url(cipherPart);
+    const authTag = fromBase64Url(tagPart);
+    const decipher = createDecipheriv(ALGORITHM, deriveKey(), iv);
+    decipher.setAuthTag(authTag);
+    const plaintext = Buffer.concat([
+      decipher.update(ciphertext),
+      decipher.final(),
+    ]);
+    const claims = JSON.parse(plaintext.toString("utf8")) as SessionClaims;
+
+    if (
+      !claims ||
+      typeof claims.email !== "string" ||
+      typeof claims.password !== "string" ||
+      typeof claims.iat !== "number" ||
+      typeof claims.exp !== "number"
+    ) {
+      return null;
+    }
+
+    return claims.exp > Date.now() ? claims : null;
+  } catch {
+    return null;
+  }
+};
 
 export const createSession = (email: string, password: string): Session => {
   const now = Date.now();
-  const token = generateToken();
-  const session: Session = {
+  const claims: SessionClaims = {
+    email,
+    password,
+    iat: now,
+    exp: now + SESSION_TTL_MS,
+  };
+  const token = encodeClaims(claims);
+
+  return {
     token,
     email,
     password,
-    createdAt: now,
-    expiresAt: now + SESSION_TTL_MS,
+    createdAt: claims.iat,
+    expiresAt: claims.exp,
   };
-  sessions.set(token, session);
-  return session;
 };
 
 export const getSession = (token: string): Session | null => {
-  const session = sessions.get(token);
-  if (!session) {
+  const claims = decodeClaims(token);
+  if (!claims) {
     return null;
   }
 
-  if (session.expiresAt <= Date.now()) {
-    sessions.delete(token);
-    return null;
-  }
-
-  // Refresh expiry on activity to keep the session alive.
-  session.expiresAt = Date.now() + SESSION_TTL_MS;
-  return session;
+  return {
+    token,
+    email: claims.email,
+    password: claims.password,
+    createdAt: claims.iat,
+    expiresAt: claims.exp,
+  };
 };
 
-export const deleteSession = (token: string): void => {
-  sessions.delete(token);
-};
+// Stateless token: nothing to revoke server-side, but kept for API parity.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const deleteSession = (_token: string): void => {};
 
 const parseCookies = (
   cookieHeader: string | undefined,
@@ -108,13 +192,4 @@ export const getSessionFromRequest = (req: Request): Session | null => {
   }
 
   return getSession(token);
-};
-
-export const purgeExpiredSessions = (): void => {
-  const now = Date.now();
-  for (const [token, session] of sessions.entries()) {
-    if (session.expiresAt <= now) {
-      sessions.delete(token);
-    }
-  }
 };

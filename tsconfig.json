@@ -6,6 +6,12 @@
     "allowSyntheticDefaultImports": true,
     "types": ["node", "vitest"]
   },
-  "include": ["src", "integrations/**/*.ts", "app/**/*.ts", "test/**/*.ts"],
+  "include": [
+    "src",
+    "integrations/**/*.ts",
+    "app/**/*.ts",
+    "api/**/*.ts",
+    "test/**/*.ts"
+  ],
   "exclude": ["dist", "node_modules"]
 }

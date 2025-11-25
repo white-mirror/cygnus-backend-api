@@ -6,12 +6,11 @@ import {
   getDeviceStatus as getDeviceStatusService,
   listDevices as listDevicesService,
   listHomes as listHomesService,
+  setDeviceMode as setDeviceModeService,
   type BghCredentials,
   type BghServiceErrorCode,
 } from "../services/bghService";
 import { FAN_MODES, HVAC_MODES } from "integrations/bgh/client";
-import { enqueueCommand, type CommandPayload } from "../services/commandQueue";
-import { registerClient } from "../services/eventStream";
 import type { AuthenticatedRequest } from "../middleware/requireAuth";
 
 type LoggedRequest = Request & { log: Logger };
@@ -169,7 +168,7 @@ export const getDeviceStatus: Controller = async (req, res, next) => {
   }
 };
 
-export const setDeviceMode: Controller = async (req, res, _next) => {
+export const setDeviceMode: Controller = async (req, res, next) => {
   const log = getRequestLogger(req).child({ route: "setDeviceMode" });
   const deviceId = parseNumericParam(log, req.params.deviceId, "deviceId", res);
   if (deviceId === null) {
@@ -220,9 +219,10 @@ export const setDeviceMode: Controller = async (req, res, _next) => {
     });
     return;
   }
-
-  const payload: CommandPayload = {
-    mode: mode as CommandPayload["mode"],
+  const payload: Parameters<
+    typeof setDeviceModeService
+  >[2] = {
+    mode: mode as Parameters<typeof setDeviceModeService>[2]["mode"],
     targetTemperature,
   };
 
@@ -236,34 +236,30 @@ export const setDeviceMode: Controller = async (req, res, _next) => {
       });
       return;
     }
-    payload.fan = fan as CommandPayload["fan"];
+    payload.fan = fan as Parameters<typeof setDeviceModeService>[2]["fan"];
   }
 
   if (typeof flags === "number" && Number.isFinite(flags)) {
-    payload.flags = flags as CommandPayload["flags"];
+    payload.flags = flags as Parameters<typeof setDeviceModeService>[2]["flags"];
   }
 
   log.info(
     { deviceId, mode, targetTemperature, fan, flags, homeId },
-    "Queueing device mode update",
+    "Updating device mode",
   );
 
-  const credentials = getCredentials(req);
-  const { jobId, position } = enqueueCommand({
-    credentials,
-    homeId,
-    deviceId,
-    payload,
-    log,
-  });
+  try {
+    const credentials = getCredentials(req);
+    await setDeviceModeService(credentials, deviceId, payload, log);
+    const device = await getDeviceStatusService(
+      credentials,
+      homeId,
+      deviceId,
+      log,
+    );
 
-  res.status(202).json({
-    jobId,
-    position,
-  });
-};
-
-export const streamDeviceEvents = (req: Request, res: Response): void => {
-  const log = getRequestLogger(req).child({ route: "streamDeviceEvents" });
-  registerClient(req, res, log);
+    res.status(200).json({ device });
+  } catch (error) {
+    handleError(error, log, res, next);
+  }
 };

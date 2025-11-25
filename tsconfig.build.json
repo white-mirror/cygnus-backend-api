@@ -7,6 +7,6 @@
     "allowSyntheticDefaultImports": true,
     "types": ["node"]
   },
-  "include": ["src", "integrations/**/*.ts", "app/**/*.ts"],
+  "include": ["src", "integrations/**/*.ts", "app/**/*.ts", "api/**/*.ts"],
   "exclude": ["dist", "node_modules", "test"]
 }
