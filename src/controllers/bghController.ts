@@ -10,7 +10,7 @@ import {
   type BghCredentials,
   type BghServiceErrorCode,
 } from "../services/bghService";
-import { FAN_MODES, HVAC_MODES } from "integrations/bgh/client";
+import { FAN_MODES, HVAC_MODES } from "../../integrations/bgh/client";
 import type { AuthenticatedRequest } from "../middleware/requireAuth";
 
 type LoggedRequest = Request & { log: Logger };

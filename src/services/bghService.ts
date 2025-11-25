@@ -8,7 +8,7 @@ import {
   type DeviceStatus,
   type DeviceStatusMap,
   type HomeSummary,
-} from "integrations/bgh";
+} from "../../integrations/bgh";
 
 export type BghServiceErrorCode =
   | "CONFIGURATION_ERROR"

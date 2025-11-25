@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import type { Logger } from "pino";
-import type { DeviceStatus } from "integrations/bgh";
-import { FAN_MODES, HVAC_MODES } from "integrations/bgh/client";
+import type { DeviceStatus } from "../../integrations/bgh";
+import { FAN_MODES, HVAC_MODES } from "../../integrations/bgh/client";
 import {
   getDeviceStatus,
   setDeviceMode,
