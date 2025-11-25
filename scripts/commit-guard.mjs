@@ -15,7 +15,11 @@ const projectRoot = path.resolve(path.dirname(__filename), "..");
 const gitDir = resolveGitDir();
 const metadataPath = path.join(gitDir, "cygnus-commit.json");
 
-const [, , messageFile] = process.argv;
+const [, , rawMessageFile] = process.argv;
+
+const messageFile = rawMessageFile
+  ? path.resolve(rawMessageFile.trim().replace(/\r$/, ""))
+  : null;
 
 function resolveGitDir() {
   const gitPath = path.join(projectRoot, ".git");
@@ -112,6 +116,13 @@ function clearMetadata() {
 
 if (process.env.CYGNUS_SKIP_VERSIONING === "1") {
   process.exit(0);
+}
+
+if (!messageFile || !existsSync(messageFile)) {
+  console.error(
+    `[versioning] Commit message file not found at ${messageFile ?? "<empty>"}`,
+  );
+  process.exit(1);
 }
 
 const message = readCommitMessage(messageFile);

@@ -131,7 +131,6 @@ export const getSession = (token: string): Session | null => {
 };
 
 // Stateless token: nothing to revoke server-side, but kept for API parity.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const deleteSession = (_token: string): void => {};
 
 const parseCookies = (

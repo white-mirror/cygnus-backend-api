@@ -219,9 +219,7 @@ export const setDeviceMode: Controller = async (req, res, next) => {
     });
     return;
   }
-  const payload: Parameters<
-    typeof setDeviceModeService
-  >[2] = {
+  const payload: Parameters<typeof setDeviceModeService>[2] = {
     mode: mode as Parameters<typeof setDeviceModeService>[2]["mode"],
     targetTemperature,
   };
@@ -240,7 +238,9 @@ export const setDeviceMode: Controller = async (req, res, next) => {
   }
 
   if (typeof flags === "number" && Number.isFinite(flags)) {
-    payload.flags = flags as Parameters<typeof setDeviceModeService>[2]["flags"];
+    payload.flags = flags as Parameters<
+      typeof setDeviceModeService
+    >[2]["flags"];
   }
 
   log.info(
