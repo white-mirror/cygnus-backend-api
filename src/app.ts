@@ -78,6 +78,16 @@ export const createApp = (): express.Express => {
     "Configured CORS",
   );
 
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin && (ALLOW_ALL_ORIGINS || isOriginPermitted(origin))) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      res.setHeader("Vary", "Origin");
+    }
+    next();
+  });
+
   app.use(
     pinoHttp({
       logger,
@@ -105,7 +115,7 @@ export const createApp = (): express.Express => {
   );
 
   app.use(corsMiddleware);
-  app.options(/.*/, corsMiddleware);
+  app.options("*", corsMiddleware);
   app.use(express.json());
 
   app.use("/api/auth", authRoutes);
