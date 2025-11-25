@@ -115,7 +115,6 @@ export const createApp = (): express.Express => {
   );
 
   app.use(corsMiddleware);
-  app.options("*", corsMiddleware);
   app.use(express.json());
 
   app.use("/api/auth", authRoutes);
