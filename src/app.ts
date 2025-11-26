@@ -1,5 +1,7 @@
 import "dotenv/config";
 import { randomUUID } from "crypto";
+import { readFileSync } from "fs";
+import path from "path";
 import express, {
   type NextFunction,
   type Request,
@@ -20,12 +22,10 @@ const allowedOrigins = rawAllowedOrigins
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
-const vercelOriginPattern = /^https?:\/\/[a-z0-9-]+\.vercel\.app$/i;
 const defaultAllowedOrigins: Array<string | RegExp> = [
   /^https?:\/\/localhost(:\d+)?$/i,
   /^http:\/\/127\.0\.0\.1(:\d+)?$/i,
   "capacitor://localhost",
-  vercelOriginPattern,
 ];
 
 const isOriginPermitted = (origin: string | undefined): boolean => {
@@ -52,7 +52,6 @@ const corsOptions: CorsOptions = ALLOW_ALL_ORIGINS
       origin: true,
       credentials: true,
       optionsSuccessStatus: 204,
-      methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
     }
   : {
       origin: (origin, callback) => {
@@ -64,24 +63,39 @@ const corsOptions: CorsOptions = ALLOW_ALL_ORIGINS
       },
       credentials: true,
       optionsSuccessStatus: 204,
-      methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
     };
 
 const corsMiddleware = cors(corsOptions);
 
+const readPackageMetadata = (): { version: string; buildNumber: string } => {
+  try {
+    const pkgPath = path.resolve(__dirname, "../package.json");
+    const pkgRaw = readFileSync(pkgPath, "utf8");
+    const pkg = JSON.parse(pkgRaw) as {
+      version?: string;
+      buildNumber?: string;
+    };
+    return {
+      version: pkg.version ?? "unknown",
+      buildNumber: pkg.buildNumber ?? "unknown",
+    };
+  } catch (error) {
+    logger.warn({ err: error }, "Failed to read package metadata");
+    return { version: "unknown", buildNumber: "unknown" };
+  }
+};
+const packageMeta = readPackageMetadata();
+
 export const createApp = (): express.Express => {
   const app = express();
 
-  logger.info(
-    {
-      allowedOrigins,
-      defaultAllowedOrigins: defaultAllowedOrigins.map((item) =>
-        typeof item === "string" ? item : item.toString(),
-      ),
-      allowAllOrigins: ALLOW_ALL_ORIGINS,
-    },
-    "Configured CORS",
-  );
+  logger.info({
+    allowAllOrigins: ALLOW_ALL_ORIGINS,
+    allowedOrigins,
+    defaultAllowedOrigins: defaultAllowedOrigins.map((item) =>
+      typeof item === "string" ? item : item.toString(),
+    ),
+  });
 
   app.use(
     pinoHttp({
@@ -128,8 +142,8 @@ export const createApp = (): express.Express => {
       vercel: process.env.VERCEL ?? "undefined",
       corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS ?? "undefined",
       corsAllowAll: process.env.CORS_ALLOW_ALL ?? "undefined",
-      version: process.env.npm_package_version ?? "unknown",
-      buildNumber: process.env.npm_package_buildNumber ?? "unknown",
+      version: packageMeta.version,
+      buildNumber: packageMeta.buildNumber,
     };
     res.json({
       status: "ok",

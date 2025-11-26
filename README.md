@@ -9,7 +9,7 @@
 
 - `SESSION_SECRET` (obligatoria): clave simétrica para cifrar y firmar el token de sesión enviado por cookie. Sin esto no se pueden emitir sesiones.
 - `CORS_ALLOWED_ORIGINS`: lista separada por comas de orígenes habilitados además de localhost y `capacitor://localhost`.
-- `CORS_ALLOW_ALL`: si está en `1` acepta cualquier origen (útil para entornos de testing/previews).
+- `CORS_ALLOW_ALL`: si está en `1` acepta cualquier origen. Úsalo solo para pruebas o previsualizaciones; no se recomienda en producción.
 - `BGH_TIMEOUT_MS`: timeout opcional (ms) para el cliente de BGH.
 
 ## Healthcheck
